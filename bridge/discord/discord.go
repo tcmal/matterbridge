@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	MessageLength = 1950
-	cFileUpload   = "file_upload"
+	MessageLength   = 1950
+	cFileUpload     = "file_upload"
+	pluralkitUserId = "466378653216014359"
 )
 
 type Bdiscord struct {
@@ -35,6 +36,9 @@ type Bdiscord struct {
 	membersMutex  sync.RWMutex
 	userMemberMap map[string]*discordgo.Member
 	nickMemberMap map[string]*discordgo.Member
+
+	// Populated if we are allowed to use pluralkit, and it is present.
+	pkCache *PKguildcache
 
 	// Webhook specific logic
 	useAutoWebhooks bool
@@ -211,6 +215,7 @@ func (b *Bdiscord) Connect() error {
 		b.Log.Error("Error obtaining server members: ", err)
 		return err
 	}
+	allowPluralKit := b.GetBool("AllowPluralKit")
 	for _, member := range members {
 		if member == nil {
 			b.Log.Warnf("Skipping missing information for a user.")
@@ -221,6 +226,15 @@ func (b *Bdiscord) Connect() error {
 		if member.Nick != "" {
 			b.nickMemberMap[member.Nick] = member
 		}
+
+		if allowPluralKit && member.User.ID == pluralkitUserId {
+			b.Log.Info("PluralKit user present, enabling pluralkit integration.")
+			b.pkCache = NewPkGuildCache(b.Log, "")
+		}
+	}
+
+	if allowPluralKit && b.pkCache == nil {
+		b.Log.Debug("PluralKit integration allowed, but bot was not detected")
 	}
 
 	b.c.AddHandler(b.messageCreate)

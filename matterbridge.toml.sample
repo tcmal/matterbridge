@@ -812,6 +812,15 @@ Server="yourservername"
 ## All settings below can be reloaded by editing the file.
 ## They are also all optional.
 
+# AllowPluralKit enables detecting and using information from pluralkit, in order to avoid non-puppet messages
+# being bridged when they shouldn't be.
+# If you aren't using PluralKit, you can keep this disabled.
+# If you are, and you disable this, you may see both puppet and non-puppet messages on platforms which do
+# not support message deletion.
+# Each system needs to have their members list public in order for this to work, and autoproxied messages
+# will still be duplicated, due to limitations of the pluralkit api
+AllowPluralKit=false
+
 # AllowMention controls which mentions are allowed. If not specified, all mentions are allowed.
 # Note that even when a mention is not allowed, it will still be displayed nicely and be clickable. It just prevents the ping/notification.
 #
@@ -1261,9 +1270,9 @@ UseUserName=false
 
 # Matrix quotes replies and as of matterbridge 1.24.0 we strip those as this causes
 # issues with bridges support threading and have PreserveThreading enabled.
-# But if you for example use mattermost or discord with webhooks you'll need to enable 
+# But if you for example use mattermost or discord with webhooks you'll need to enable
 # this (and keep PreserveThreading disabled) if you want something that looks like a reply from matrix.
-# See issues: 
+# See issues:
 # - https://github.com/42wim/matterbridge/issues/1819
 # - https://github.com/42wim/matterbridge/issues/1780
 KeepQuotedReply=false

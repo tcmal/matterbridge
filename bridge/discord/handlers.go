@@ -1,6 +1,8 @@
 package bdiscord
 
 import (
+	"strings"
+
 	"github.com/42wim/matterbridge/bridge/config"
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
@@ -108,6 +110,17 @@ func (b *Bdiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreat
 	rmsg := config.Message{Account: b.Account, Avatar: "https://cdn.discordapp.com/avatars/" + m.Author.ID + "/" + m.Author.Avatar + ".jpg", UserID: m.Author.ID, ID: m.ID}
 
 	b.Log.Debugf("== Receiving event %#v", m.Message)
+
+	if b.pkCache != nil && !m.Author.Bot {
+		if b.pkCache.MessageWillBeProxied(m.Author.ID, m.Content) {
+			b.Log.Debug("Message will be proxied by pluralkit, ignoring.")
+			return
+		}
+		if strings.HasPrefix(m.Content, "pk;") {
+			b.Log.Debugf("Invalidating pk cache for %s, as they seem to have used a pluralkit command\n", m.Author.ID)
+			b.pkCache.InvalidateCache(m.Author.ID)
+		}
+	}
 
 	if m.Content != "" {
 		m.Message.Content = b.replaceChannelMentions(m.Message.Content)
