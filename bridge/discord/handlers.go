@@ -2,6 +2,7 @@ package bdiscord
 
 import (
 	"strings"
+	"time"
 
 	"github.com/42wim/matterbridge/bridge/config"
 	"github.com/bwmarrin/discordgo"
@@ -65,6 +66,10 @@ func (b *Bdiscord) messageTyping(s *discordgo.Session, m *discordgo.TypingStart)
 	b.Remote <- rmsg
 }
 
+// Discord sends spurious updates for messages that haven't been edited,
+// or haven't been edited recently. Messages as old as 5 years ago have
+// been observed to be updated, always with a URL or embedded content.
+// These need to be ignored.
 func (b *Bdiscord) messageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) { //nolint:unparam
 	if m.GuildID != b.guildID {
 		b.Log.Debugf("Ignoring messageUpdate because it originates from a different guild")
@@ -75,6 +80,12 @@ func (b *Bdiscord) messageUpdate(s *discordgo.Session, m *discordgo.MessageUpdat
 	}
 	// only when message is actually edited
 	if m.Message.EditedTimestamp != nil {
+		// message must have been edited recently
+		delay := time.Now().Sub(*m.Message.EditedTimestamp)
+		if delay >= time.Duration(6) * time.Hour {
+			return
+		}
+
 		b.Log.Debugf("Sending edit message")
 		m.Content += b.GetString("EditSuffix")
 		msg := &discordgo.MessageCreate{
